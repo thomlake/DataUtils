@@ -1,3 +1,32 @@
+#---------------------------------------#
+#	This file is part of DataUtils.
+#
+#	DataUtils is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	BowNlPy is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with DataUtils.  If not, see <http://www.gnu.org/licenses/>.
+#---------------------------------------#
+# author:
+#	tllake 
+# email:
+#	<thomas.l.lake@wmich.edu>
+#	<thom.l.lake@gmail.com>
+# date:
+#	2012.02.12
+# file:
+#	representation.py
+# description:
+#	classes for storing vector representation of non vector things
+#---------------------------------------#
+
 import numpy as np
 
 class OneHotRep(object):
