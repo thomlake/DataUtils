@@ -65,16 +65,26 @@ class RandBinRep(object):
         return tupidx
 
     def add_to_vocab(self, item):
-        rep = self.__findrep()
-        self.item_to_idx[item] = rep
-        self.idx_to_item[rep] = item
+        try:
+            self.item_to_idx[item]
+        except KeyError:
+            rep = self.__findrep()
+            self.item_to_idx[item] = rep
+            self.idx_to_item[rep] = item
     
-    def itemrep(self, item):
+    def itemrep(self, item, notfound = '<UNK?>'):
         try:
             return self.item_to_rep[item]
         except KeyError:
+            try:
+                idx = self.item_to_idx[item]
+            except KeyError:
+                if notfound not in self.item_to_idx:
+                    self.add_to_vocab(notfound)
+                idx = self.item_to_idx[notfound]
+                item = notfound
             z = np.zeros(self.n)
-            z[list(self.item_to_idx[item])] = 1
+            z[list(idx)] = 1
             self.item_to_rep[item] = z
             return z
 
