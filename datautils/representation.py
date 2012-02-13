@@ -29,34 +29,51 @@
 
 import numpy as np
 
+def binarray(dim, onesat):
+    z = np.zeros(dim)
+    z[list(onesat)] = 1
+    return z
+
+def onehotarray(dim, oneat):
+    z = np.zeros(dim)
+    z[oneat] = 1
+    return z
+
+def wheregt(x, t):
+    return tuple([i for i in np.where(x > t)[0]])
+
 class OneHotRep(object):
-    def __init__(self, vocab = None):
-        self.item_to_idx = {}
-        self.idx_to_item = {}
+    def __init__(self, vocab = None, notfound = '<UNK?>'):
+        self.item_to_idx = {notfound: 0}
+        self.idx_to_item = {0: notfound}
         self.item_to_rep = {}
+        self.dim = 1
+        self.notfound = notfound
         if vocab:
-            self.n = len(vocab)
-            self.vocab = vocab
+            self.dim += len(vocab)
             self.item_to_idx = dict([(item, i) for i, item in enumerate(vocab)])
             self.idx_to_item = dict([(i, item) for i, item in enumerate(vocab)])
 
-    def add_to_vocab(self, item):
-        self.item_to_idx[item] = self.n
-        self.idx_to_item[self.n] = item
-        self.n += 1
-
-    def itemrep(self, item):
+    def __getitem__(self, x):
         try:
-            return self.item_to_rep[item]
+            return self.item_to_rep[x]
         except KeyError:
-            z = np.zeros(self.n)
-            z[self.item_to_idx[item]] = 1
-            self.item_to_rep[item] = z
+            try:
+                idx = self.item_to_idx[x]
+            except KeyError:
+                idx = self.item_to_idx[self.notfound]
+            z = onehotarray(self.dim, idx)
+            self.item_to_rep[x] = z
             return z
+
+    def add(self, item):
+        self.item_to_idx[item] = self.dim
+        self.idx_to_item[self.dim] = item
+        self.dim += 1
 
     def bagrep(self, items):
         z = np.zeros(self.n)
-        z[[self.item_to_idx[item] for item in items]] = 1
+        z[[self[item] for item in items]] = 1
         return z
 
     def bagfrom(self, rep, thresh = 0.):
@@ -64,14 +81,6 @@ class OneHotRep(object):
 
     def itemfrom(self, rep):
         return self.idx_to_item[rep.argmax()]
-
-def binarray(dim, onesat):
-    z = np.zeros(dim)
-    z[list(onesat)] = 1
-    return z
-
-def wheregt(x, t):
-    return tuple([i for i in np.where(x > t)[0]])
 
 class RandBinRep(object):
     def __init__(self, dim, vocab = None, p = 0.1, notfound = '<UNK?>'):
