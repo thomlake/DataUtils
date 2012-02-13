@@ -65,58 +65,59 @@ class OneHotRep(object):
     def itemfrom(self, rep):
         return self.idx_to_item[rep.argmax()]
 
+def binarray(dim, onesat):
+    z = np.zeros(dim)
+    z[list(onesat)] = 1
+    return z
+
 def wheregt(x, t):
     return tuple([i for i in np.where(x > t)[0]])
 
 class RandBinRep(object):
-    def __init__(self, n, vocab = None, p = 0.1):
-        self.item_to_idx = {}
-        self.idx_to_item = {}
-        self.item_to_rep = {}
-        self.n = n
-        self.p = p
+    def __init__(self, dim, vocab = None, p = 0.1, notfound = '<UNK?>'):
+        self.dim = dim
         self.q = 1 - p
+        self.notfound = notfound
+        notfoundidx = wheregt(np.random.random(self.dim), self.q)
+        self.item_to_idx = {notfound: notfoundidx}
+        self.idx_to_item = {notfoundidx: notfound}
+        self.item_to_rep = {notfound: binarray(dim, notfoundidx)}
         if vocab:
-            self.vocab = vocab
             for item in vocab:
-                rep = self.__findrep()
-                self.item_to_idx[item] = rep
-                self.idx_to_item[rep] = item
+                idx = self.__newidx()
+                self.item_to_idx[item] = idx
+                self.idx_to_item[idx] = item
 
-    def __findrep(self):
-        tupidx = wheregt(np.random.random(self.n), self.q)
+    def __getitem__(self, x):
+        try:
+            return self.item_to_rep[x]
+        except KeyError:
+            try:
+                idx = self.item_to_idx[x]
+            except KeyError:
+                return self.item_to_rep[self.notfound]
+            z = binarray(self.dim, idx)
+            self.item_to_rep[x] = z
+            return z
+
+    def __newidx(self):
+        idx = wheregt(np.random.random(self.dim), self.q)
         patience = 1000
-        while tupidx in self.idx_to_item and patience > 0:
-            tupidx = wheregt(np.random.random(self.n), self.q)
+        while idx in self.idx_to_item and patience > 0:
+            idx = wheregt(np.random.random(self.dim), self.q)
             patience -= 1
         if patience < 0:
             return ()
-        return tupidx
+        return idx
 
-    def add_to_vocab(self, item):
+    def add(self, item):
         try:
             self.item_to_idx[item]
         except KeyError:
-            rep = self.__findrep()
-            self.item_to_idx[item] = rep
-            self.idx_to_item[rep] = item
+            idx = self.__newidx()
+            self.item_to_idx[item] = idx
+            self.idx_to_item[idx] = item
     
-    def itemrep(self, item, notfound = '<UNK?>'):
-        try:
-            return self.item_to_rep[item]
-        except KeyError:
-            try:
-                idx = self.item_to_idx[item]
-            except KeyError:
-                if notfound not in self.item_to_idx:
-                    self.add_to_vocab(notfound)
-                idx = self.item_to_idx[notfound]
-                item = notfound
-            z = np.zeros(self.n)
-            z[list(idx)] = 1
-            self.item_to_rep[item] = z
-            return z
-
     def itemfrom(self, rep, thresh = 0.):
         try:
             return self.idx_to_item[wheregt(rep, thresh)]
