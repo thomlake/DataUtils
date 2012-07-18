@@ -39,9 +39,62 @@ def onehotarray(dim, oneat):
     z[oneat] = 1
     return z
 
+def onehotoffsetarray(offsetdim, onehotdim, indices):
+    offset, onehot = indices
+    z = np.zeros(offsetdim + onehotdim)
+    z[offset] = 1
+    z[offsetdim + onehot] = 1
+    return z
+
 def wheregt(x, t):
     return tuple([i for i in np.where(x > t)[0]])
 
+class IntRep(object):
+    def __init__(self, vocab = None, notfound = '<UNK?>'):
+        self.notfound = notfound
+        self.item_to_idx = {notfound: 0}
+        self.idx_to_item = {0: notfound}
+        self.idx_ctr = {0: 0}
+        self.dim = 1
+        if vocab:
+            for word in vocab:
+                try:
+                    i = self.item_to_idx[word]
+                    self.idx_ctr[i] += 1
+                except KeyError:
+                    self.item_to_idx[word] = self.dim
+                    self.idx_to_item[self.dim] = word
+                    self.idx_ctr[self.dim] = 1
+                    self.dim += 1
+    
+    def __getitem__(self, word):
+        try:
+            return self.item_to_idx[word]
+        except KeyError:
+            return 0
+
+    def inv(self, val):
+        try:
+            return self.idx_to_item[val]
+        except:
+            return self.notfound
+
+    def topk(self, k = None, get_item = False):
+        s = sorted(self.idx_ctr.iteritems(), key = lambda x: x[1], reverse = True)[:k]
+        if get_item:
+            return [(self.inv(idx), count) for idx, count in s][:k]
+        return s[:k]
+
+    def add(self, word):
+        try:
+            i = self.item_to_idx[word]
+            self.idx_ctr[i] += 1
+        except KeyError:
+            self.item_to_idx[word] = self.dim
+            self.idx_to_item[self.dim] = word
+            self.idx_ctr[self.dim] = 1
+            self.dim += 1
+    
 class OneHotRep(object):
     def __init__(self, vocab = None, notfound = '<UNK?>'):
         self.item_to_idx = {notfound: 0}
@@ -81,6 +134,61 @@ class OneHotRep(object):
 
     def itemfrom(self, rep):
         return self.idx_to_item[rep.argmax()]
+
+class OneHotOffsetRep(object):
+    def __init__(self, offsetdim, onehotdim, vocab = None, notfound = '<UNK?>'):
+        self.onehotdim = onehotdim
+        self.offsetdim = offsetdim
+        self.notfound = notfound
+        self.curroffset = 0
+        self.curronehot = 1
+        notfoundidx = (0, 0)
+        self.item_to_idx = {notfound: notfoundidx}
+        self.idx_to_item = {notfoundidx: notfound}
+        self.item_to_rep = {notfound: onehotoffsetarray(self.offsetdim, self.onehotdim, notfoundidx)}
+        if vocab:
+            for item in vocab:
+                self.add(item)
+
+    def __getitem__(self, x):
+        try:
+            return self.item_to_rep[x]
+        except KeyError:
+            try:
+                idx = self.item_to_idx[x]
+            except KeyError:
+                return self.item_to_rep[self.notfound]
+            z = onehotoffsetarray(self.offsetdim, self.onehotdim, idx)
+            self.item_to_rep[x] = z
+            return z
+
+    def __newidx(self):
+        if self.curronehot % self.onehotdim == 0:
+            self.curronehot = 1
+            self.curroffset += 1
+            return (self.curroffset, 0)
+        else:
+            idx = (self.curroffset, self.curronehot)
+            self.curronehot += 1
+            return idx
+
+    def add(self, item):
+        try:
+            self.item_to_idx[item]
+        except KeyError:
+            idx = self.__newidx()
+            self.item_to_idx[item] = idx
+            self.idx_to_item[idx] = item
+    
+    def itemfrom(self, rep, thresh = 0.):
+        try:
+            offsetidx = rep[:self.offsetdim].argmax()
+            onehotidx = rep[self.offsetdim:].argmax()
+            return self.idx_to_item[(offsetidx, onehotidx)]
+        except KeyError:
+            pass
+        return '__ITEM_NOT_FOUND__'
+
 
 class RandBinRep(object):
     def __init__(self, dim, vocab = None, p = 0.1, notfound = '<UNK?>'):
@@ -134,3 +242,7 @@ class RandBinRep(object):
             pass
         return '__ITEM_NOT_FOUND__'
 
+
+class BinaryTreeSoftmaxRep(object):
+    def __init__(self, n):
+        self.n = n

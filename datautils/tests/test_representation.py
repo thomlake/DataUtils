@@ -1,4 +1,4 @@
-from .. representation import RandBinRep, OneHotRep, wheregt, onehotarray, binarray
+from .. representation import RandBinRep, OneHotRep, OneHotOffsetRep, wheregt, onehotarray, binarray
 import unittest, sys
 import numpy as np
 
@@ -41,6 +41,29 @@ class TestOneHotRep(unittest.TestCase):
             ohr.add(item)
         for item in vocab:
             outrep = ohr[item]
+            outitem = ohr.itemfrom(outrep)
+            self.assertEqual(item, outitem)
+
+class TestOneHotOffsetRep(unittest.TestCase):
+    def test_passed_vocab(self):
+        vocab = ['the', 'cat', 'in', 'the', 'hat']
+        n = 10
+        ohr = OneHotOffsetRep(2, 3, vocab = vocab)
+        for item in vocab:
+            outrep = ohr[item]
+            outitem = ohr.itemfrom(outrep)
+            self.assertEqual(item, outitem)
+    
+    def test_added_vocab(self):
+        vocab = ['the', 'cat', 'in', 'the', 'hat']
+        n = 10
+        ohr = OneHotOffsetRep(2, 3)
+        for item in vocab:
+            ohr.add(item)
+        for item in vocab:
+            outrep = ohr[item]
+            print ohr.item_to_idx[item]
+            print outrep
             outitem = ohr.itemfrom(outrep)
             self.assertEqual(item, outitem)
 

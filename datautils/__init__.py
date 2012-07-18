@@ -1,2 +1,2 @@
 """... automodule::"""
-import representation, tokenizer
+import representation, tokenizer, samplers, wordembeddings
